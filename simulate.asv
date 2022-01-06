@@ -1,0 +1,98 @@
+%Input
+Messages = [
+          "Short_BBCArabic2.wav",... 
+          "Short_FM9090.wav",...
+          "Short_QuranPalestine.wav",...
+          "Short_SkyNewsArabia.wav",...
+          "Short_RussianVoice.wav"
+       ];
+%**************************
+
+
+%******* AM Modulator ***********
+
+% AM parameters ********* 
+fc = 100e3;
+df = 50e3;
+audiofileFactor = 0.9;
+interpolationFactor = 20;
+%*************************
+
+[c , modes , Fs , BW ,t] =  AM_Modulator(Messages, fc, df, audiofileFactor , interpolationFactor);
+plotSignalArray(modes , Fs , Messages)
+
+
+
+
+%************************************************************************
+%                     Receiver
+%************************************************************************
+wif = 25e3;
+channel = 1;
+
+s  = c;
+
+% ********** RF_Stage ************** 
+
+s = RF_Stage(s , channel ,BW(channel), fc , df  , Fs);
+subplot(4 , 1 , 1)
+[x ,y] = plotFD(s , Fs);
+plot(x , y , 'b')
+title("RF Stage Output")
+xlabel("Frequency(Hz)")
+ylabel("Magntude")
+ 
+
+% ********** Mixer ************** 
+
+s = Mixer(s , channel , fc , df+0.1e3 , wif , Fs);
+subplot(4 , 1 , 2)
+[x ,y] = plotFD(s , Fs);
+plot(x , y , 'b')
+title("Mixer Output")
+xlabel("Frequency(Hz)")
+ylabel("Magntude")
+
+
+% ********** IF_Stage ************** 
+
+s = IF_Stage(s , channel , BW(channel) ,wif, Fs);
+subplot(4 , 1 , 3)
+[x ,y] = plotFD(s , Fs);
+plot(x , y , 'y')
+ title("IF-Stage Output")
+xlabel("Frequency(Hz)")
+ylabel("Magntude")
+
+
+% ********** Baseband Detection_Stage ************** 
+
+s = BaseBandDetection(s , wif , BW(channel) , Fs);
+subplot(4 , 1 , 4)
+[x ,y] = plotFD(s , Fs);
+plot(x , y , 'g')
+title("BaseBand Detection Output")
+xlabel("Frequency(Hz)")
+ylabel("Magntude")
+
+%Play Sound of The Message 
+figure
+subplot(1 ,2 , 1)
+s = downsample(s , interpolationFactor);
+[x ,y] = plotFD(s , 44100);
+plot(x , y , 'g')
+title("\delta f = 0.1KHZ")
+xlabel("Frequency(Hz)")
+ylabel("Magntude")
+sound(s , 44100)
+
+subplot(1 ,2 , 2)
+[yy , Fs] = audioread( "Short_BBCArabic2.wav");
+yy = sum(yy , 2)';
+[x ,y] = plotFD( yy, 44100);
+
+plot(x , y , 'g')
+title("Original")
+xlabel("Frequency(Hz)")
+ylabel("Magntude")
+sound(s , 44100)
